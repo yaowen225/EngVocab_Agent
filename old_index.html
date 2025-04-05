@@ -41,7 +41,7 @@
         
         .app-container {
             width: 390px;
-            height: 844px;
+            height: 780px;
             margin: 0 auto;
             background-color: var(--card-bg);
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
@@ -579,6 +579,40 @@
             background-color: var(--border-color);
             border-radius: 3px;
         }
+        
+        .previous-guesses {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .previous-guesses h3 {
+            margin-bottom: 1.5rem;
+            color: var(--text-light);
+        }
+        
+        .previous-guess {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background-color: var(--hint-bg);
+            border-radius: 12px;
+            opacity: 0.9;
+        }
+        
+        .previous-guess:last-child {
+            margin-bottom: 0;
+        }
+        
+        .previous-guess .guess-info h3 {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .previous-guess .semantic-feedback {
+            background-color: var(--hint-bg);
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -669,6 +703,24 @@
                     <div class="letter-blank">?</div>
                     <div class="letter-blank">?</div>
                     <div class="letter-blank">?</div>
+                </div>
+            </div>
+            
+            <div class="question-section">
+                <h3>請提問來幫助猜測</h3>
+                
+                <div class="question-form">
+                    <input type="text" placeholder="輸入您的問題...">
+                    <button onclick="askQuestion()">提問</button>
+                </div>
+                
+                <div id="question-answers">
+                    <!-- 已回答的問題會顯示在這裡 -->
+                </div>
+                
+                <div class="suggested-questions">
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否表示一個具體的物品？', '否', '這個詞是否需要團隊合作？')">這個詞是否表示一個具體的物品？</button>
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否與改變或進步有關？', '是', '這個詞是否與商業管理有關？')">這個詞是否與改變或進步有關？</button>
                 </div>
             </div>
             
@@ -769,8 +821,8 @@
                 </div>
                 
                 <div class="suggested-questions">
-                    <button class="question-tag" onclick="showAnswer(this, '這個詞與創造力有關嗎？', '是', '這個詞是形容詞嗎？')">這個詞與創造力有關嗎？</button>
-                    <button class="question-tag" onclick="showAnswer(this, '這個詞常用在商業環境中嗎？', '是', '這個詞是一個抽象概念嗎？')">這個詞常用在商業環境中嗎？</button>
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否表示一個具體的物品？', '否', '這個詞是否需要團隊合作？')">這個詞是否表示一個具體的物品？</button>
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否與改變或進步有關？', '是', '這個詞是否與商業管理有關？')">這個詞是否與改變或進步有關？</button>
                 </div>
             </div>
             
@@ -830,75 +882,8 @@
                 </div>
                 
                 <div class="suggested-questions">
-                    <button class="question-tag" onclick="showAnswer(this, '這個詞與創造力有關嗎？', '是', '這個詞是形容詞嗎？')">這個詞與創造力有關嗎？</button>
-                    <button class="question-tag" onclick="showAnswer(this, '這個詞常用在商業環境中嗎？', '是', '這個詞是一個抽象概念嗎？')">這個詞常用在商業環境中嗎？</button>
-                </div>
-            </div>
-            
-            <div class="guess-form">
-                <input type="text" placeholder="輸入新的猜測...">
-                <button onclick="showPage('guess-result-2')">提交</button>
-            </div>
-        </div>
-        
-        <!-- 第二次問題回答頁面 -->
-        <div id="question-answer-2" class="page">
-            <header>
-                <h1>詞彙挑戰</h1>
-                <nav>
-                    <button class="secondary" onclick="showPage('category-select')">返回</button>
-                </nav>
-            </header>
-            
-            <div class="context-hint">
-                <h3>情境提示</h3>
-                <p>許多公司聲稱這是他們的核心價值，並設立專門的部門來促進這個過程，尤其是科技公司更重視這一點。</p>
-            </div>
-            
-            <div class="guess-result">
-                <div class="guess-info">
-                    <h3>您的猜測: <span class="guess-word">TECHNOLOGY</span></h3>
-                </div>
-                
-                <div class="wordle-grid">
-                    <div class="letter-tile incorrect">T</div>
-                    <div class="letter-tile incorrect">E</div>
-                    <div class="letter-tile incorrect">C</div>
-                    <div class="letter-tile incorrect">H</div>
-                    <div class="letter-tile incorrect">N</div>
-                    <div class="letter-tile wrong-position">O</div>
-                    <div class="letter-tile incorrect">L</div>
-                    <div class="letter-tile wrong-position">O</div>
-                    <div class="letter-tile wrong-position">G</div>
-                    <div class="letter-tile incorrect">Y</div>
-                </div>
-                
-                <div class="semantic-feedback">
-                    <p>語義反饋: 類似（與目標詞義相關）</p>
-                </div>
-            </div>
-            
-            <div class="question-answer">
-                <p class="question-text">您的問題: 這個詞是指一種產品嗎？</p>
-                <p class="answer-text">答案: 否</p>
-            </div>
-            
-            <div class="question-answer">
-                <p class="question-text">您的問題: 這個詞與創造力有關嗎？</p>
-                <p class="answer-text">答案: 是</p>
-            </div>
-            
-            <div class="question-answer">
-                <p class="question-text">您的問題: 這個詞常用在商業環境中嗎？</p>
-                <p class="answer-text">答案: 是</p>
-            </div>
-            
-            <div class="question-section">
-                <h3>請提問來幫助猜測</h3>
-                
-                <div class="question-form">
-                    <input type="text" placeholder="輸入您的問題...">
-                    <button>提問</button>
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否表示一個具體的物品？', '否', '這個詞是否需要團隊合作？')">這個詞是否表示一個具體的物品？</button>
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否與改變或進步有關？', '是', '這個詞是否與商業管理有關？')">這個詞是否與改變或進步有關？</button>
                 </div>
             </div>
             
@@ -920,6 +905,43 @@
             <div class="context-hint">
                 <h3>情境提示</h3>
                 <p>許多公司聲稱這是他們的核心價值，並設立專門的部門來促進這個過程，尤其是科技公司更重視這一點。</p>
+            </div>
+
+            <div class="previous-guesses">
+                <h3>上一次猜測</h3>
+                <div class="previous-guess">
+                    <div class="guess-info">
+                        <h3>您的猜測: <span class="guess-word">TECHNOLOGY</span></h3>
+                    </div>
+                    
+                    <div class="wordle-grid">
+                        <div class="letter-tile incorrect">T</div>
+                        <div class="letter-tile incorrect">E</div>
+                        <div class="letter-tile incorrect">C</div>
+                        <div class="letter-tile incorrect">H</div>
+                        <div class="letter-tile incorrect">N</div>
+                        <div class="letter-tile wrong-position">O</div>
+                        <div class="letter-tile incorrect">L</div>
+                        <div class="letter-tile wrong-position">O</div>
+                        <div class="letter-tile wrong-position">G</div>
+                        <div class="letter-tile incorrect">Y</div>
+                    </div>
+                    
+                    <div class="semantic-feedback">
+                        <p>語義反饋: 類似（與目標詞義相關）</p>
+                    </div>
+
+                    <div class="previous-questions">
+                        <div class="question-answer">
+                            <p class="question-text">您的問題: 這個詞是否表示一個具體的物品？</p>
+                            <p class="answer-text">答案: 否</p>
+                        </div>
+                        <div class="question-answer">
+                            <p class="question-text">您的問題: 這個詞是否與改變或進步有關？</p>
+                            <p class="answer-text">答案: 是</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="guess-result">
@@ -944,24 +966,139 @@
                 </div>
             </div>
             
-            <div class="question-answer">
-                <p class="question-text">您的問題: 這個詞是指一種產品嗎？</p>
-                <p class="answer-text">答案: 否</p>
-            </div>
-            
-            <div class="question-answer">
-                <p class="question-text">您的問題: 這個詞與創造力有關嗎？</p>
-                <p class="answer-text">答案: 是</p>
-            </div>
-            
-            <div class="question-answer">
-                <p class="question-text">您的問題: 這個詞常用在商業環境中嗎？</p>
-                <p class="answer-text">答案: 是</p>
+            <div class="question-section">
+                <h3>請提問來幫助猜測</h3>
+                
+                <div class="question-form">
+                    <input type="text" placeholder="輸入您的問題...">
+                    <button onclick="askQuestion()">提問</button>
+                </div>
+                
+                <div id="question-answers">
+                    <!-- 已回答的問題會顯示在這裡 -->
+                </div>
+                
+                <div class="suggested-questions">
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否需要團隊合作？', '是', '這個詞是否與商業管理有關？')">這個詞是否需要團隊合作？</button>
+                    <button class="question-tag" onclick="showAnswer(this, '這個詞是否代表一種過程？', '是', '這個詞是否與創新文化有關？')">這個詞是否代表一種過程？</button>
+                </div>
             </div>
             
             <div class="guess-form">
                 <input type="text" placeholder="輸入新的猜測...">
-                <button onclick="showPage('success')">提交</button>
+                <button onclick="showPage('guess-result-3')">提交</button>
+            </div>
+        </div>
+
+        <!-- 第三次猜測結果頁面 -->
+        <div id="guess-result-3" class="page">
+            <header>
+                <h1>詞彙挑戰</h1>
+                <nav>
+                    <button class="secondary" onclick="showPage('category-select')">返回</button>
+                </nav>
+            </header>
+            
+            <div class="context-hint">
+                <h3>情境提示</h3>
+                <p>許多公司聲稱這是他們的核心價值，並設立專門的部門來促進這個過程，尤其是科技公司更重視這一點。</p>
+            </div>
+
+            <div class="previous-guesses">
+                <h3>之前的猜測</h3>
+                <div class="previous-guess">
+                    <div class="guess-info">
+                        <h3>第二次猜測: <span class="guess-word">INVENTION</span></h3>
+                    </div>
+                    
+                    <div class="wordle-grid">
+                        <div class="letter-tile correct">I</div>
+                        <div class="letter-tile incorrect">N</div>
+                        <div class="letter-tile wrong-position">V</div>
+                        <div class="letter-tile incorrect">E</div>
+                        <div class="letter-tile correct">N</div>
+                        <div class="letter-tile correct">T</div>
+                        <div class="letter-tile correct">I</div>
+                        <div class="letter-tile correct">O</div>
+                        <div class="letter-tile correct">N</div>
+                    </div>
+                    
+                    <div class="semantic-feedback">
+                        <p>語義反饋: 非常類似（接近目標詞義）</p>
+                    </div>
+
+                    <div class="previous-questions">
+                        <div class="question-answer">
+                            <p class="question-text">您的問題: 這個詞是否需要團隊合作？</p>
+                            <p class="answer-text">答案: 是</p>
+                        </div>
+                        <div class="question-answer">
+                            <p class="question-text">您的問題: 這個詞是否代表一種過程？</p>
+                            <p class="answer-text">答案: 是</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="previous-guess">
+                    <div class="guess-info">
+                        <h3>第一次猜測: <span class="guess-word">TECHNOLOGY</span></h3>
+                    </div>
+                    
+                    <div class="wordle-grid">
+                        <div class="letter-tile incorrect">T</div>
+                        <div class="letter-tile incorrect">E</div>
+                        <div class="letter-tile incorrect">C</div>
+                        <div class="letter-tile incorrect">H</div>
+                        <div class="letter-tile incorrect">N</div>
+                        <div class="letter-tile wrong-position">O</div>
+                        <div class="letter-tile incorrect">L</div>
+                        <div class="letter-tile wrong-position">O</div>
+                        <div class="letter-tile wrong-position">G</div>
+                        <div class="letter-tile incorrect">Y</div>
+                    </div>
+                    
+                    <div class="semantic-feedback">
+                        <p>語義反饋: 類似（與目標詞義相關）</p>
+                    </div>
+
+                    <div class="previous-questions">
+                        <div class="question-answer">
+                            <p class="question-text">您的問題: 這個詞是否表示一個具體的物品？</p>
+                            <p class="answer-text">答案: 否</p>
+                        </div>
+                        <div class="question-answer">
+                            <p class="question-text">您的問題: 這個詞是否與改變或進步有關？</p>
+                            <p class="answer-text">答案: 是</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="guess-result">
+                <div class="guess-info">
+                    <h3>您的猜測: <span class="guess-word">INNOVATION</span></h3>
+                </div>
+                
+                <div class="wordle-grid">
+                    <div class="letter-tile correct">I</div>
+                    <div class="letter-tile correct">N</div>
+                    <div class="letter-tile correct">N</div>
+                    <div class="letter-tile correct">O</div>
+                    <div class="letter-tile correct">V</div>
+                    <div class="letter-tile correct">A</div>
+                    <div class="letter-tile correct">T</div>
+                    <div class="letter-tile correct">I</div>
+                    <div class="letter-tile correct">O</div>
+                    <div class="letter-tile correct">N</div>
+                </div>
+                
+                <div class="semantic-feedback">
+                    <p>語義反饋: 完全正確！</p>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="showPage('success')">查看詳細資訊</button>
             </div>
         </div>
         
@@ -999,6 +1136,77 @@
                 <div class="detail-item">
                     <h4>相關詞彙</h4>
                     <p>CREATIVITY (創造力)、DISRUPTION (顛覆性變革)、ADVANCEMENT (進步)</p>
+                </div>
+            </div>
+            
+            <div class="previous-guesses">
+                <h3>您的猜測歷程</h3>
+                <div class="previous-guess">
+                    <div class="guess-info">
+                        <h3>第三次猜測: <span class="guess-word">INNOVATION</span></h3>
+                    </div>
+                    
+                    <div class="wordle-grid">
+                        <div class="letter-tile correct">I</div>
+                        <div class="letter-tile correct">N</div>
+                        <div class="letter-tile correct">N</div>
+                        <div class="letter-tile correct">O</div>
+                        <div class="letter-tile correct">V</div>
+                        <div class="letter-tile correct">A</div>
+                        <div class="letter-tile correct">T</div>
+                        <div class="letter-tile correct">I</div>
+                        <div class="letter-tile correct">O</div>
+                        <div class="letter-tile correct">N</div>
+                    </div>
+                    
+                    <div class="semantic-feedback">
+                        <p>語義反饋: 完全正確！</p>
+                    </div>
+                </div>
+                
+                <div class="previous-guess">
+                    <div class="guess-info">
+                        <h3>第二次猜測: <span class="guess-word">INVENTION</span></h3>
+                    </div>
+                    
+                    <div class="wordle-grid">
+                        <div class="letter-tile correct">I</div>
+                        <div class="letter-tile incorrect">N</div>
+                        <div class="letter-tile wrong-position">V</div>
+                        <div class="letter-tile incorrect">E</div>
+                        <div class="letter-tile correct">N</div>
+                        <div class="letter-tile correct">T</div>
+                        <div class="letter-tile correct">I</div>
+                        <div class="letter-tile correct">O</div>
+                        <div class="letter-tile correct">N</div>
+                    </div>
+                    
+                    <div class="semantic-feedback">
+                        <p>語義反饋: 非常類似（接近目標詞義）</p>
+                    </div>
+                </div>
+                
+                <div class="previous-guess">
+                    <div class="guess-info">
+                        <h3>第一次猜測: <span class="guess-word">TECHNOLOGY</span></h3>
+                    </div>
+                    
+                    <div class="wordle-grid">
+                        <div class="letter-tile incorrect">T</div>
+                        <div class="letter-tile incorrect">E</div>
+                        <div class="letter-tile incorrect">C</div>
+                        <div class="letter-tile incorrect">H</div>
+                        <div class="letter-tile incorrect">N</div>
+                        <div class="letter-tile wrong-position">O</div>
+                        <div class="letter-tile incorrect">L</div>
+                        <div class="letter-tile wrong-position">O</div>
+                        <div class="letter-tile wrong-position">G</div>
+                        <div class="letter-tile incorrect">Y</div>
+                    </div>
+                    
+                    <div class="semantic-feedback">
+                        <p>語義反饋: 類似（與目標詞義相關）</p>
+                    </div>
                 </div>
             </div>
             
@@ -1169,7 +1377,27 @@
             const targetPage = document.getElementById(pageId);
             if (targetPage) {
                 targetPage.classList.add('active');
-                window.scrollTo(0, 0); // 滾動到頂部
+                window.scrollTo(0, 0);
+                
+                // 如果切換到新的猜測頁面，顯示之前的問題答案
+                if (pageId.startsWith('guess-result')) {
+                    const questionAnswers = targetPage.querySelector('#question-answers');
+                    if (questionAnswers && answeredQuestions.length > 0) {
+                        // 清空現有的問題答案
+                        questionAnswers.innerHTML = '';
+                        
+                        // 添加所有已回答的問題
+                        answeredQuestions.forEach(qa => {
+                            const answerHtml = `
+                                <div class="question-answer">
+                                    <p class="question-text">您的問題: ${qa.question}</p>
+                                    <p class="answer-text">答案: ${qa.answer}</p>
+                                </div>
+                            `;
+                            questionAnswers.insertAdjacentHTML('beforeend', answerHtml);
+                        });
+                    }
+                }
             }
         }
         
@@ -1178,8 +1406,15 @@
             showPage('length-hint');
         }
 
+        // 儲存已回答的問題
+        let answeredQuestions = [];
+
         // 顯示問題答案並新增新問題
         function showAnswer(button, question, answer, newQuestion) {
+            // 獲取當前頁面的問題答案區域
+            const currentPage = document.querySelector('.page.active');
+            const questionAnswers = currentPage.querySelector('#question-answers');
+            
             // 創建答案區塊
             const answerHtml = `
                 <div class="question-answer">
@@ -1189,7 +1424,13 @@
             `;
             
             // 將答案添加到問題答案區域
-            document.getElementById('question-answers').insertAdjacentHTML('beforeend', answerHtml);
+            questionAnswers.insertAdjacentHTML('beforeend', answerHtml);
+            
+            // 儲存已回答的問題
+            answeredQuestions.push({
+                question: question,
+                answer: answer
+            });
             
             // 移除已使用的問題按鈕
             button.remove();
@@ -1201,7 +1442,7 @@
                         ${newQuestion}
                     </button>
                 `;
-                document.querySelector('.suggested-questions').insertAdjacentHTML('beforeend', newQuestionHtml);
+                currentPage.querySelector('.suggested-questions').insertAdjacentHTML('beforeend', newQuestionHtml);
             }
         }
     </script>

@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>詞彙探索家 Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f5f5f0;
+            --card-bg: #ffffff;
+            --primary-color: #5e6e8f; /* Muji/Claude inspired subtle blue/grey */
+            --secondary-color: #a0a0a0; /* Neutral grey */
+            --text-color: #333333;
+            --text-light: #666666;
+            --border-color: #e2e8f0;
+            --correct-color: #8ab08a; /* Soft green */
+            --wrong-position-color: #d4c685; /* Soft yellow */
+            --incorrect-color: #a0a0a0; /* Using secondary grey */
+            --hint-bg: #f8f9fa;
+            --button-bg: var(--primary-color);
+            --button-text: #ffffff;
+            --secondary-button-bg: var(--hint-bg);
+            --secondary-button-text: var(--text-color);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px 0; /* Add some padding top/bottom */
+            min-height: 100vh;
+            display: flex;
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            background: linear-gradient(135deg, #f5f5f0 0%, #e8e8e3 100%);
+        }
+
+        .app-container {
+            width: 390px;
+            height: 780px; /* Fixed height for demo */
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.1);
+            border-radius: 40px;
+            padding: 20px;
+            overflow: hidden; /* Prevents content spill */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page {
+            flex-grow: 1; /* Allow page content to fill space */
+            display: none; /* Hide pages by default */
+            flex-direction: column;
+            overflow-y: auto; /* Enable scrolling ONLY if content exceeds height */
+            padding: 0 15px 20px;
+        }
+
+        .page.active {
+            display: flex; /* Show active page as flex container */
+        }
+
+        /* Scrollbar Styling (for when content overflows) */
+        .page::-webkit-scrollbar {
+            width: 5px;
+        }
+        .page::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .page::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* Common Elements */
+        h1, h2, h3, h4 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+        h2 { font-size: 1.3rem; color: var(--primary-color); }
+        h3 { font-size: 1.1rem; }
+        h4 { font-size: 1rem; font-weight: 700; }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            transition: background-color 0.2s ease;
+            font-weight: 500;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button.secondary {
+            background-color: var(--secondary-button-bg);
+            color: var(--secondary-button-text);
+            border: 1px solid var(--border-color);
+        }
+        button.category {
+            width: 100%;
+            text-align: center;
+            background-color: var(--hint-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        button.category:hover {
+            background-color: var(--border-color);
+            opacity: 1;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--hint-bg);
+            flex-grow: 1; /* Allow input to take space */
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #fff;
+        }
+
+        /* Header & Navigation */
+        header {
+            padding: 10px 0 15px 0; /* Adjusted padding */
+            margin-bottom: 15px;
+            position: sticky;
+            top: -20px; /* Adjust based on container padding */
+            background-color: var(--card-bg);
+            z-index: 10;
+            border-bottom: 1px solid var(--border-color);
+        }
+        nav {
+            margin-top: 10px; /* Space between title and nav */
+            display: flex;
+            justify-content: space-between; /* Push buttons to sides */
+            align-items: center;
+        }
+        .nav-back-button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Page Specific Styles */
+
+        /* Homepage */
+        #homepage { justify-content: center; text-align: center; }
+        .welcome-message { margin: 1.5rem 0; font-size: 1.1rem; color: var(--text-light); }
+        .main-menu { display: flex; flex-direction: column; gap: 15px; width: 80%; margin: 2rem auto 0; }
+
+        /* Category Select */
+        .categories { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 2rem 0; }
+        #category-select .random-challenge { margin-top: 1rem; width: 100%; }
+
+        /* Game Pages Common */
+        .context-hint { background-color: var(--hint-bg); padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid var(--primary-color); }
+        .word-display-area { text-align: center; margin-bottom: 1.5rem; }
+        .word-display-box { display: inline-block; width: 80%; height: 40px; background-color: var(--hint-bg); border: 1px dashed var(--border-color); border-radius: 8px; line-height: 40px; color: var(--text-light); font-size: 1rem; letter-spacing: 2px; }
+        .question-section { margin-bottom: 1.5rem; }
+        .question-form { display: flex; gap: 10px; margin-bottom: 1rem; }
+        #question-answers { margin-bottom: 1rem; max-height: 150px; overflow-y: auto; /* Scroll only if many questions */ padding-right: 5px;}
+        .question-answer { background-color: var(--hint-bg); padding: 10px 15px; border-radius: 8px; margin-bottom: 0.8rem; border-left: 3px solid var(--secondary-color); }
+        .question-text { font-weight: 500; margin-bottom: 0.3rem; font-size: 0.9rem; }
+        .answer-text { color: var(--primary-color); font-weight: 600; font-size: 0.9rem; }
+        .suggested-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
+        .question-tag { padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; background-color: var(--hint-bg); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer; }
+        .question-tag:hover { background-color: var(--border-color); }
+        .guess-form { display: flex; gap: 10px; margin-top: 1.5rem; }
+
+        /* Guess Result Pages */
+        .guess-result-block { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .guess-result-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .guess-info { margin-bottom: 0.8rem; }
+        .guess-word { color: var(--primary-color); font-weight: 700; margin-left: 5px; }
+        .wordle-grid { display: flex; justify-content: center; gap: 5px; margin: 1rem 0; }
+        .letter-tile { width: 30px; height: 30px; font-size: 1rem; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 600; text-transform: uppercase; color: white; }
+        .letter-tile.correct { background-color: var(--correct-color); }
+        .letter-tile.wrong-position { background-color: var(--wrong-position-color); }
+        .letter-tile.incorrect { background-color: var(--incorrect-color); }
+        .semantic-feedback { text-align: center; padding: 10px; background-color: var(--hint-bg); border-radius: 8px; margin-top: 1rem; }
+        .semantic-feedback p { font-weight: 500; color: var(--primary-color); font-size: 0.9rem; }
+
+        /* Previous Guesses Section */
+        .previous-guesses-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
+        .previous-guesses-section > h3 { color: var(--text-light); font-size: 1rem; margin-bottom: 1rem; } /* Title for the whole section */
+
+        .previous-guess-item {
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden; /* Ensure border-radius clips content */
+        }
+
+        .collapsible-trigger {
+            background-color: var(--hint-bg);
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--border-color); /* Separator line */
+        }
+         .collapsible-trigger:hover {
+             background-color: var(--border-color);
+         }
+        .collapsible-trigger span.arrow {
+            transition: transform 0.2s ease;
+            display: inline-block; /* Allows transform */
+        }
+         .collapsible-trigger.open span.arrow {
+             transform: rotate(90deg);
+         }
+
+        .collapsible-content {
+            display: none; /* Hidden by default */
+            padding: 1rem;
+            background-color: rgba(248, 249, 250, 0.5); /* Slightly more transparent */
+        }
+        .collapsible-content.show {
+            display: block;
+        }
+
+        .previous-guess-item .guess-info h4 { color: var(--text-light); font-size: 1rem; margin-bottom: 0.5rem; }
+        .previous-guess-item .semantic-feedback { background-color: transparent; padding: 5px 0 0 0; margin-top: 0.5rem; text-align: left; }
+        .previous-guess-item .semantic-feedback p { font-size: 0.85rem; }
+        .previous-guess-item .wordle-grid { margin: 0.5rem 0; justify-content: flex-start; } /* Align left */
+        .previous-guess-item .question-answers-history { margin-top: 0; /* Remove top margin as it's inside collapsible */ }
+        /* Remove h5 title, incorporated into trigger */
+
+        /* Success Page */
+        #success .final-correct-guess {
+             margin-bottom: 1.5rem;
+             padding-bottom: 1.5rem;
+             border-bottom: 1px solid var(--border-color);
+        }
+        #success { text-align: center; }
+        .congrats { font-size: 1.6rem; color: var(--correct-color); margin: 1rem 0 0.5rem; }
+        .success-subtext { color: var(--text-light); margin-bottom: 1.5rem; }
+        .word-details { background-color: var(--hint-bg); padding: 20px; border-radius: 12px; margin-bottom: 1.5rem; text-align: left; }
+        .detail-item { margin-bottom: 1rem; }
+        .detail-item:last-child { margin-bottom: 0; }
+        .detail-item h4 { font-weight: 600; margin-bottom: 0.5rem; color: var(--primary-color); }
+        .translation { color: var(--text-light); font-style: italic; font-size: 0.9rem; }
+        .related-words p { display: inline-block; background-color: var(--secondary-button-bg); padding: 3px 8px; border-radius: 5px; margin-right: 5px; font-size: 0.9rem; }
+        #success .action-buttons { display: flex; gap: 10px; margin-top: 1.5rem; }
+        #success .action-buttons button { flex: 1; }
+        #success .previous-guesses-section { text-align: left; } /* Override center align */
+
+
+        /* Progress Page */
+        .stats-container { padding: 0; /* Remove padding as card has it */ }
+        .stats-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .stats-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .stats-title { font-size: 1.1rem; color: var(--primary-color); font-weight: 600; }
+        /* Chart Styles */
+        .chart {
+            display: block;
+            margin: 1rem auto;
+            max-width: 100%;
+            height: auto;
+        }
+        .donut-chart {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 1.5rem;
+        }
+        .donut-chart .donut-label {
+            font-size: 1.8em;
+            font-weight: 700;
+            fill: var(--primary-color);
+            text-anchor: middle;
+        }
+        .donut-chart .donut-sublabel {
+            font-size: 0.7em;
+            fill: var(--text-light);
+            text-anchor: middle;
+        }
+        .donut-chart .donut-segment {
+             stroke-linecap: round; /* Smoother ends */
+             transition: stroke-dashoffset 0.5s ease-in-out;
+        }
+        .line-chart {
+            width: 100%;
+            max-height: 180px;
+        }
+        .line-chart .grid {
+            stroke: var(--border-color);
+            stroke-dasharray: 2,2;
+            stroke-width: 0.5;
+        }
+        .line-chart .line {
+            fill: none;
+            stroke: var(--primary-color);
+            stroke-width: 2;
+        }
+        .line-chart .point {
+            fill: var(--primary-color);
+            stroke: var(--card-bg);
+            stroke-width: 1.5;
+        }
+        .line-chart .axis-label {
+            font-size: 0.7rem;
+            fill: var(--text-light);
+        }
+        .score-level-block {
+            text-align: center;
+            padding: 15px;
+            background-color: var(--hint-bg);
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+        .score-level-block .score {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        .score-level-block .description {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        /* Notes Detail Page */
+        #notes-detail .notes-content { padding: 0 5px; }
+        .note-category { margin-bottom: 2rem; }
+        .note-category h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .note-item { margin-bottom: 1.5rem; padding-left: 10px; border-left: 3px solid var(--border-color); }
+        .note-item h4 { font-weight: 600; margin-bottom: 0.5rem; }
+        .note-item p { margin-bottom: 0.5rem; font-size: 0.95rem; color: var(--text-color); }
+        .note-item p.example { font-style: italic; color: var(--text-light); font-size: 0.9rem; }
+        .note-item p.tip { background-color: #fffbe6; /* Light yellow hint */ border-left: 3px solid #ffe58f; padding: 8px 12px; border-radius: 4px; font-size: 0.9rem; margin-top: 0.8rem; }
+        .review-list li { margin-bottom: 0.5rem; font-size: 0.95rem; }
+        .review-list span { color: var(--text-light); font-size: 0.85rem; margin-left: 8px; }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+
+        <!-- 1. 首頁 -->
+        <div id="homepage" class="page active">
+            <h1>詞彙探索家</h1>
+            <div class="welcome-message">
+                交由LLM Agent來讓你無負擔的利用碎片時間提升英文詞彙
+            </div>
+            <div class="main-menu">
+                <button onclick="showPage('category-select')">開始遊戲</button>
+                <button class="secondary" onclick="showPage('progress')">查看學習統計</button>
+            </div>
+        </div>
+
+        <!-- 2. 選擇詞彙類別頁面 -->
+        <div id="category-select" class="page">
+            <header>
+                <nav>
+                    <button class="nav-back-button" onclick="showPage('homepage')">‹ 返回</button>
+                </nav>
+                <h1>選擇詞彙類別</h1>
+            </header>
+            <div class="categories">
+                <button class="category" onclick="showPage('game-start')">商業相關</button>
+                <button class="category" onclick="showPage('game-start')">科技相關</button>
+                <button class="category" onclick="showPage('game-start')">旅遊相關</button>
+                <button class="category" onclick="showPage('game-start')">辦公環境</button>
+                <button class="category" onclick="showPage('game-start')">日常交流</button>
+                <button class="category" onclick="showPage('game-start')">學術用語</button>
+            </div>
+            <button class="random-challenge" onclick="showPage('game-start')">開始隨機挑戰</button>
+        </div>
+
+        <!-- 3. 遊戲開始頁面（第一次猜測前） -->
+        <div id="game-start" class="page">
+             <header>
+                <nav>
+                    <button class="nav-back-button" onclick="showPage('category-select')">‹ 返回</button>
+                </nav>
+                <h1>詞彙挑戰</h1>
+            </header>
+            <div class="context-hint">
+                <h3>情境提示</h3>
+                <p>許多公司聲稱這是他們的核心價值，並設立專門的部門來促進這個過程，尤其是科技公司更重視這一點。</p>
+            </div>
+            <div class="word-display-area">
+                <h3>請猜測這個詞彙</h3>
+                <div class="word-display-box">??????????</div>
+            </div>
+            <div class="question-section">
+                <h3>請提問來幫助猜測</h3>
+                <div class="question-form">
+                    <input type="text" placeholder="輸入您的問題... (Demo 中請點擊建議)">
+                    <button disabled>提問</button> <!-- Disabled for demo -->
+                </div>
+                <div id="game-start-qna">
+                    <!-- Q&A for this page -->
+                </div>
+                <div class="suggested-questions" id="game-start-suggested">
+                     <button class="question-tag" data-question="這個詞是否表示一個具體的物品？" data-answer="否" data-next-question="這個詞是否需要團隊合作？" onclick="handleQuestionClick(this, 'game-start')">這個詞是否表示一個具體的物品？</button>
+                     <button class="question-tag" data-question="這個詞是否與改變或進步有關？" data-answer="是" data-next-question="這個詞是否代表一種過程？" onclick="handleQuestionClick(this, 'game-start')">這個詞是否與改變或進步有關？</button>
+                </div>
+            </div>
+            <div class="guess-form">
+                <input type="text" id="guess-input-1" placeholder="輸入您的猜測...">
+                <button onclick="submitGuess(1)">提交</button>
+            </div>
+        </div>
+
+        <!-- 4. 第一次猜測結果頁面（同時是第二次猜測的頁面） -->
+        <div id="guess-result-1" class="page">
+             <header>
+                <nav>
+                     <button class="nav-back-button" onclick="showPage('category-select')">‹ 返回</button>
+                </nav>
+                <h1>詞彙挑戰</h1>
+            </header>
+             <div class="context-hint">
+                 <h3>情境提示</h3>
+                 <p>許多公司聲稱這是他們的核心價值，並設立專門的部門來促進這個過程，尤其是科技公司更重視這一點。</p>
+             </div>
+
+             <!-- Current Guess 1 Result -->
+             <div class="guess-result-block">
+                 <div class="guess-info">
+                     <h3>第一次猜測: <span class="guess-word">TECHNOLOGY</span></h3>
+                 </div>
+                 <div class="wordle-grid" id="wordle-guess-1">
+                     <!-- Populated by JS -->
+                 </div>
+                 <div class="semantic-feedback">
+                     <p>語義反饋: 類似（與目標詞義相關）</p>
+                 </div>
+             </div>
+
+             <!-- Question Area (Retains state from previous page) -->
+            <div class="question-section">
+                <h3>請提問來幫助猜測</h3>
+                 <div class="question-form">
+                     <input type="text" placeholder="輸入您的問題... (Demo 中請點擊建議)">
+                     <button disabled>提問</button> <!-- Disabled for demo -->
+                 </div>
+                 <div id="guess-result-1-qna">
+                     <!-- Q&A history + new Q&A for this page -->
+                 </div>
+                 <div class="suggested-questions" id="guess-result-1-suggested">
+                     <!-- Suggested questions will be populated by JS -->
+                 </div>
+             </div>
+
+             <!-- Guess Input 2 -->
+             <div class="guess-form">
+                 <input type="text" id="guess-input-2" placeholder="輸入您的猜測...">
+                 <button onclick="submitGuess(2)">提交</button>
+             </div>
+        </div>
+
+        <!-- 5. 第二次猜測結果頁面（同時是第三次猜測的頁面） -->
+        <div id="guess-result-2" class="page">
+             <header>
+                <nav>
+                     <button class="nav-back-button" onclick="showPage('category-select')">‹ 返回</button>
+                </nav>
+                <h1>詞彙挑戰</h1>
+            </header>
+             <div class="context-hint">
+                 <h3>情境提示</h3>
+                 <p>許多公司聲稱這是他們的核心價值，並設立專門的部門來促進這個過程，尤其是科技公司更重視這一點。</p>
+             </div>
+
+            <!-- Current Guess (INVENTION) -->
+             <div class="guess-result-block">
+                 <div class="guess-info">
+                     <h3>第二次猜測: <span class="guess-word">INVENTION</span></h3>
+                 </div>
+                 <div class="wordle-grid" id="wordle-guess-2">
+                    <!-- Populated by JS -->
+                 </div>
+                 <div class="semantic-feedback">
+                     <p>語義反饋: 類似（接近目標詞義）</p>
+                 </div>
+             </div>
+
+             <!-- Previous Guess History (TECHNOLOGY + Q&A) - Collapsible -->
+            <div class="previous-guesses-section">
+                 <h3>之前的猜測紀錄</h3>
+                 <div class="previous-guess-item" id="prev-guess-1-display">
+                     <!-- Populated by JS with collapsible structure -->
+                 </div>
+             </div>
+
+            <!-- Question Area for Third Guess -->
+            <div class="question-section" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                 <h3>請提問來幫助猜測</h3>
+                 <div class="question-form">
+                     <input type="text" placeholder="輸入您的問題... (Demo 中請點擊建議)">
+                     <button disabled>提問</button> <!-- Disabled for demo -->
+                 </div>
+                 <div id="guess-result-2-qna">
+                     <!-- Q&A history from guess-result-1 + new Q&A for this page -->
+                 </div>
+                 <div class="suggested-questions" id="guess-result-2-suggested">
+                     <!-- Suggested questions will be populated by JS -->
+                 </div>
+             </div>
+
+             <!-- Guess Input 3 -->
+             <div class="guess-form">
+                 <input type="text" id="guess-input-3" placeholder="輸入您的猜測...">
+                 <button onclick="submitGuess(3)">提交</button> <!-- Will now go to 'success' page -->
+             </div>
+        </div>
+
+        <!-- 6. 第三次猜測結果頁面（該局遊戲結算） - REMOVED -->
+        <!-- <div id="guess-result-3" class="page"> ... </div> -->
+
+        <!-- 7. 成功猜對詳細資訊頁面 (Now includes final guess result) -->
+        <div id="success" class="page">
+             <header>
+                <nav>
+                    <button class="nav-back-button" onclick="showPage('homepage')">‹ 返回首頁</button> <!-- Direct to homepage -->
+                 </nav>
+             </header>
+
+             <!-- Final Correct Guess Display -->
+             <div class="final-correct-guess">
+                 <div class="guess-info">
+                     <h3>最終猜測: <span class="guess-word">INNOVATION</span> (正確!)</h3>
+                 </div>
+                 <div class="wordle-grid" id="wordle-guess-3-final">
+                    <!-- Populated by JS -->
+                 </div>
+                 <div class="semantic-feedback">
+                     <p>語義反饋: 完全正確！</p>
+                 </div>
+              </div>
+
+             <div class="success-message">
+                 <h2 class="congrats">🎉 恭喜您猜對了！ 🎉</h2>
+                 <p class="success-subtext">您成功猜出了目標詞彙</p>
+             </div>
+             <div class="word-details">
+                 <div class="detail-item">
+                     <h4>詞彙</h4>
+                     <p>INNOVATION (創新)</p>
+                 </div>
+                 <div class="detail-item">
+                     <h4>定義</h4>
+                     <p>指的是將新想法、裝置或方法引入使用的過程。與INVENTION（發明）相比，創新更強調將新想法實際應用並創造價值的過程。</p>
+                 </div>
+                 <div class="detail-item">
+                     <h4>例句</h4>
+                     <p>The company's focus on <strong>innovation</strong> has led to breakthrough products.</p>
+                     <p class="translation">(公司對創新的關注導致了突破性產品的出現)</p>
+                 </div>
+                 <div class="detail-item related-words">
+                     <h4>相關詞彙</h4>
+                     <p>CREATIVITY</p> <p>DISRUPTION</p> <p>ADVANCEMENT</p> <p>INVENTION</p>
+                 </div>
+             </div>
+
+             <!-- Collapsible Guess History Section -->
+             <div class="previous-guesses-section">
+                 <h3>您的猜測歷程</h3>
+                 <!-- Guess 2 History -->
+                 <div class="previous-guess-item" id="final-guess-2">
+                      <!-- Populated by JS (INVENTION guess + Q&A) with collapsible structure -->
+                 </div>
+                 <!-- Guess 1 History -->
+                 <div class="previous-guess-item" id="final-guess-1">
+                     <!-- Populated by JS (TECHNOLOGY guess + Q&A) with collapsible structure -->
+                 </div>
+             </div>
+
+             <div class="action-buttons">
+                 <button onclick="resetGame()">下一個詞彙</button> <!-- Reset game state -->
+                 <button class="secondary" onclick="showPage('homepage')">返回首頁</button>
+             </div>
+        </div>
+
+        <!-- 8. 學習統計頁面 -->
+        <div id="progress" class="page">
+            <header>
+                <nav>
+                     <button class="nav-back-button" onclick="showPage('homepage')">‹ 返回</button>
+                 </nav>
+                <h1>學習統計</h1>
+            </header>
+            <div class="stats-container">
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <span class="stats-title">詞彙庫掌握度</span>
+                    </div>
+                    <!-- SVG Donut Chart -->
+                    <svg class="chart donut-chart" viewBox="0 0 100 100" id="vocab-mastery-chart">
+                        <circle cx="50" cy="50" r="42" fill="transparent" stroke="#e2e8f0" stroke-width="10"></circle>
+                        <!-- Progress Segment added by JS -->
+                        <text x="50" y="50" class="donut-label" dominant-baseline="middle">?</text>
+                        <text x="50" y="65" class="donut-sublabel" dominant-baseline="middle">已練習比例</text>
+                    </svg>
+                    <div class="score-level-block" id="score-level">
+                        <!-- Populated by JS -->
+                    </div>
+                 </div>
+                 <div class="stats-card">
+                     <div class="stats-header">
+                        <span class="stats-title">詞彙量增長趨勢</span>
+                     </div>
+                     <!-- SVG Line Chart -->
+                    <svg class="chart line-chart" viewBox="0 0 300 150" id="vocab-growth-chart">
+                        <!-- Content added by JS -->
+                    </svg>
+                 </div>
+
+                 <div class="stats-card notes-section">
+                    <div class="stats-header">
+                        <span class="stats-title">答題筆記</span>
+                    </div>
+                    <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1rem;">查看您在遊戲中遇到的困難詞彙、常混淆的詞彙以及記憶技巧。</p>
+                    <button class="secondary" style="width:100%" onclick="showPage('notes-detail')">查看詳細筆記</button>
+                 </div>
+             </div>
+        </div>
+
+        <!-- NEW: 9. 答題筆記詳情頁 -->
+        <div id="notes-detail" class="page">
+            <header>
+                <nav>
+                    <button class="nav-back-button" onclick="showPage('progress')">‹ 返回統計</button>
+                </nav>
+                <h1>答題筆記 (模擬20次遊玩)</h1>
+            </header>
+            <div class="notes-content">
+
+                <div class="note-category">
+                    <h3>重點複習詞彙 (近期錯誤較多)</h3>
+                     <ul class="review-list">
+                        <li><strong>Ensure</strong> vs. <strong>Insure</strong> vs. <strong>Assure</strong> <span>(動詞混淆, 錯誤3次)</span></li>
+                        <li><strong>Disruption</strong> (n.) <span>(拼字/語義不熟, 錯誤2次)</span></li>
+                        <li><strong>Eligible</strong> (adj.) <span>(語義不熟, 錯誤2次)</span></li>
+                        <li><strong>Comprehensive</strong> (adj.) <span>(拼字錯誤1次)</span></li>
+                        <li><strong>Feasible</strong> (adj.) <span>(語義不熟, 錯誤1次)</span></li>
+                    </ul>
+                </div>
+
+                <div class="note-category">
+                    <h3>常見混淆與難點</h3>
+                    <div class="note-item">
+                        <h4>Affect (v.) vs. Effect (n.)</h4>
+                        <p><strong>Affect (v.):</strong> 影響 (動詞)</p>
+                        <p class="example">例：The weather will affect our plans. (天氣將影響我們的計劃)</p>
+                        <p><strong>Effect (n.):</strong> 效果，結果 (名詞)</p>
+                        <p class="example">例：The special effects in the movie were amazing. (電影中的特效令人驚嘆)</p>
+                        <!-- Removed Tip -->
+                    </div>
+                     <div class="note-item">
+                        <h4>Complement (v./n.) vs. Compliment (v./n.)</h4>
+                         <p><strong>Complement:</strong> 補充，使...完整</p>
+                         <p class="example">例：The sauce complements the dish perfectly. (醬汁完美地襯托了這道菜)</p>
+                         <p><strong>Compliment:</strong> 讚美，恭維</p>
+                         <p class="example">例：She received many compliments on her new hairstyle. (她的新髮型得到了許多讚美)</p>
+                         <!-- Removed Tip -->
+                    </div>
+                     <div class="note-item">
+                        <h4>Principle (n.) vs. Principal (adj./n.)</h4>
+                        <p><strong>Principle:</strong> 原則，原理 (只作名詞)。</p>
+                        <p class="example">例: He adheres to strong moral principles. (他堅守崇高的道德原則)</p>
+                        <p><strong>Principal:</strong> 最重要的，主要的 (形容詞)；校長，本金 (名詞)。</p>
+                         <p class="example">例: The principal reason for the delay was the bad weather. (延誤的主要原因是惡劣天氣)</p>
+                         <p class="example">例: The school principal addressed the students. (校長向學生們講話)</p>
+                         <!-- Removed Tip -->
+                    </div>
+                     <div class="note-item">
+                        <h4>Despite / In spite of (+ Noun/Gerund) vs. Although (+ Clause)</h4>
+                        <p><strong>Despite / In spite of:</strong> 儘管...，後面接名詞、代名詞或動名詞 (V-ing)。</p>
+                        <p class="example">例: Despite the heavy rain, we enjoyed the picnic. (儘管下大雨，我們還是享受了野餐)</p>
+                        <p class="example">例: In spite of feeling tired, he finished the marathon. (儘管感到疲倦，他還是完成了馬拉松)</p>
+                        <p><strong>Although:</strong> 雖然...，後面接一個完整的子句 (包含主詞和動詞)。</p>
+                        <p class="example">例: Although it was raining heavily, we enjoyed the picnic. (雖然雨下得很大，我們還是享受了野餐)</p>
+                    </div>
+                     <div class="note-item">
+                        <h4>Ensure vs. Insure vs. Assure</h4>
+                        <p><strong>Ensure (v.):</strong> 確保 (確保某事會發生)。</p>
+                        <p class="example">例: Please ensure that all doors are locked before leaving. (離開前請確保所有門都已上鎖)</p>
+                        <p><strong>Insure (v.):</strong> 投保，為...買保險 (通常指財務上的保險)。</p>
+                        <p class="example">例: It is wise to insure your house against fire. (為你的房子投保火險是明智的)</p>
+                        <p><strong>Assure (v.):</strong> 向...保證，使...放心 (通常對人說)。</p>
+                        <p class="example">例: I assure you that the package will arrive on time. (我向你保證包裹會準時到達)</p>
+                    </div>
+                </div>
+
+                 <div class="note-category">
+                    <h3>待加強練習</h3>
+                    <p>根據您的答題記錄，以下主題或詞彙類型可以多加練習：</p>
+                     <ul class="review-list">
+                        <li>與「財務金融」相關的動詞 (e.g., allocate, reimburse, audit)</li>
+                        <li>描述「公司結構與部門」的名詞 (e.g., subsidiary, headquarters, division)</li>
+                        <li>容易混淆的形容詞副詞變化 (e.g., considerable/considerably, economic/economical)</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Game State (Hardcoded for Demo) ---
+        let answeredQuestionsLog = []; // Stores { page: 'pageId', question: 'q', answer: 'a' }
+        let currentSuggestedQuestions = {}; // Stores suggested questions for current page
+
+        const demoGuesses = {
+            1: { word: "TECHNOLOGY", page: "guess-result-1", qPage: "game-start" }, // Qs asked on game-start lead to guess 1
+            2: { word: "INVENTION", page: "guess-result-2", qPage: "guess-result-1" }, // Qs asked on guess-result-1 lead to guess 2
+            3: { word: "INNOVATION", page: "success", qPage: "guess-result-2" } // Qs asked on guess-result-2 lead to guess 3
+        };
+        const targetWord = "INNOVATION";
+        const TOTAL_TOEIC_WORDS = 5000; // Simulated total TOEIC words
+        const PLAYED_WORDS_COUNT = 250; // Simulated played words count
+
+        // --- Page Navigation ---
+        function showPage(pageId) {
+            console.log(`Navigating to ${pageId}`);
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
+            // Show target page
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                targetPage.scrollTop = 0; // Scroll to top
+
+                // --- Update Page Content Based on State ---
+                if (pageId === 'guess-result-1') {
+                    // Update Wordle for Guess 1
+                    const wordleGuess1 = document.getElementById('wordle-guess-1');
+                    if(wordleGuess1) wordleGuess1.innerHTML = getWordleGridHTML("TECHNOLOGY");
+                    // Populate Q&A asked *during* game-start
+                    populateQnA('guess-result-1-qna', 'game-start');
+                    // Reset suggested questions based on game-start's final state
+                    resetSuggestedQuestions('guess-result-1-suggested', 'game-start');
+                     // Ensure collapsibles are ready
+                    setupCollapsibles(targetPage);
+                } else if (pageId === 'guess-result-2') {
+                     // Update Wordle for Guess 2
+                    const wordleGuess2 = document.getElementById('wordle-guess-2');
+                    if(wordleGuess2) wordleGuess2.innerHTML = getWordleGridHTML("INVENTION");
+                    // Populate history for guess 1 (which includes its own Q&A)
+                    populatePreviousGuess(1, 'prev-guess-1-display');
+                    // Populate Q&A asked *during* guess-result-1 (for display in this page's QnA section)
+                    populateQnA('guess-result-2-qna', 'guess-result-1');
+                    // Reset suggested questions based on guess-result-1's state
+                    resetSuggestedQuestions('guess-result-2-suggested', 'guess-result-1');
+                     // Ensure collapsibles are ready
+                    setupCollapsibles(targetPage);
+                } else if (pageId === 'success') {
+                    // Update Wordle for Final Guess
+                    const wordleGuess3 = document.getElementById('wordle-guess-3-final');
+                    if(wordleGuess3) wordleGuess3.innerHTML = getWordleGridHTML("INNOVATION");
+                    // Populate history for previous guesses
+                    populateSuccessPageHistory();
+                     // Ensure collapsibles are ready
+                    setupCollapsibles(targetPage);
+                } else if (pageId === 'progress') {
+                     // Generate charts when progress page is shown
+                     generateCharts();
+                } else if (pageId === 'game-start') {
+                    resetGame(); // Use the reset function
+                }
+            } else {
+                console.error(`Page with ID ${pageId} not found.`);
+            }
+        }
+
+        function resetGame() {
+             console.log("Resetting game...");
+             answeredQuestionsLog = [];
+             currentSuggestedQuestions = {};
+             // Reset game-start page content
+             document.getElementById('game-start-qna').innerHTML = '';
+             resetSuggestedQuestions('game-start-suggested', null);
+             const guessInput1 = document.getElementById('guess-input-1');
+             if (guessInput1) guessInput1.value = '';
+             const guessInput2 = document.getElementById('guess-input-2');
+             if (guessInput2) guessInput2.value = '';
+             const guessInput3 = document.getElementById('guess-input-3');
+             if (guessInput3) guessInput3.value = '';
+             // Clear previous guess displays if they exist
+             const prev1 = document.getElementById('prev-guess-1-display');
+             if(prev1) prev1.innerHTML = '';
+             const prev2 = document.getElementById('prev-guess-2-display'); // If exists
+             if(prev2) prev2.innerHTML = '';
+             const final1 = document.getElementById('final-guess-1');
+             if(final1) final1.innerHTML = '';
+             const final2 = document.getElementById('final-guess-2');
+             if(final2) final2.innerHTML = '';
+
+             // Go back to start page
+             showPage('game-start');
+         }
+
+
+        // --- Question Handling (Demo Logic) ---
+        function handleQuestionClick(buttonElement, currentPageId) {
+            const question = buttonElement.getAttribute('data-question');
+            const answer = buttonElement.getAttribute('data-answer');
+            const nextQuestionText = buttonElement.getAttribute('data-next-question');
+            const qnaTargetId = currentPageId + '-qna'; // ID of the QnA display area for the current page
+            const suggestedTargetId = currentPageId + '-suggested'; // ID of the suggested questions area
+
+            console.log(`Handling question click on page: ${currentPageId}, target QnA: ${qnaTargetId}`);
+
+            // Log the answered question *with the page it was asked on*
+            answeredQuestionsLog.push({ page: currentPageId, question: question, answer: answer });
+            console.log("Answered Questions Log:", answeredQuestionsLog);
+
+            // Display the Q&A immediately on the current page's QnA area
+            displaySingleQnA(question, answer, qnaTargetId);
+
+            // Remove clicked button
+            buttonElement.remove();
+
+            // Add the next suggested question if it exists
+            if (nextQuestionText) {
+                 addSuggestedQuestion(nextQuestionText, suggestedTargetId, currentPageId);
+            }
+
+             // Update the state of suggested questions for potential restoration later
+             updateCurrentSuggested(suggestedTargetId);
+        }
+
+        function displaySingleQnA(question, answer, targetElementId) {
+            const qnaArea = document.getElementById(targetElementId);
+            if (qnaArea) {
+                console.log(`Displaying QnA in: ${targetElementId}`);
+                const answerHtml = `
+                    <div class="question-answer">
+                        <p class="question-text">問: ${question}</p>
+                        <p class="answer-text">答: ${answer}</p>
+                    </div>`;
+                // Prepend new questions to see them easily if the area scrolls
+                qnaArea.insertAdjacentHTML('afterbegin', answerHtml);
+            } else {
+                 console.warn(`QnA display area not found: ${targetElementId}`);
+             }
+        }
+
+        function addSuggestedQuestion(questionText, targetElementId, pageId) {
+            const suggestedArea = document.getElementById(targetElementId);
+            if (suggestedArea) {
+                // Determine dummy answer and next question for demo continuity
+                let dummyAnswer = '是'; // Default
+                let dummyNextQuestion = ''; // Default (no more questions)
+                if (questionText.includes('團隊合作')) {
+                    dummyAnswer = '是';
+                    dummyNextQuestion = '這個詞是否與商業管理有關？'; // Example next
+                } else if (questionText.includes('代表一種過程')) {
+                    dummyAnswer = '是';
+                    dummyNextQuestion = '這個詞是名詞嗎？'; // Example next
+                } else if (questionText.includes('商業管理')) {
+                    dummyAnswer = '否';
+                    dummyNextQuestion = '這個詞是否可用於形容產品？'; // Example next
+                } else if (questionText.includes('名詞嗎')) {
+                    dummyAnswer = '是';
+                     dummyNextQuestion = '這個詞是否表示一個結果？'; // Example next
+                } else if (questionText.includes('形容產品')) {
+                     dummyAnswer = '是'; // e.g., an innovative product
+                } else if (questionText.includes('表示一個結果')) {
+                     dummyAnswer = '可以 (指創新的成果)';
+                }
+
+                 const newButtonHtml = `
+                     <button
+                         class="question-tag"
+                         data-question="${questionText}"
+                         data-answer="${dummyAnswer}"
+                         data-next-question="${dummyNextQuestion}"
+                         onclick="handleQuestionClick(this, '${pageId}')" // <<<< ENSURE pageId is correct here
+                     >
+                         ${questionText}
+                     </button>`;
+                 suggestedArea.insertAdjacentHTML('beforeend', newButtonHtml);
+             } else {
+                 console.warn(`Suggested questions area not found: ${targetElementId}`);
+             }
+         }
+
+         function updateCurrentSuggested(targetElementId) {
+             const suggestedArea = document.getElementById(targetElementId);
+             if (suggestedArea) {
+                 // Use the element ID as the key, assuming it's unique per context
+                 currentSuggestedQuestions[targetElementId] = suggestedArea.innerHTML;
+             }
+         }
+
+         function resetSuggestedQuestions(targetElementId, previousPageContextId) {
+             const suggestedArea = document.getElementById(targetElementId);
+             if (!suggestedArea) {
+                 console.warn(`Suggested questions area not found for reset: ${targetElementId}`);
+                 return;
+             }
+
+             const previousSuggestedId = previousPageContextId ? previousPageContextId + '-suggested' : null;
+             console.log(`Resetting suggested Qs for ${targetElementId}, previous context: ${previousPageContextId}, previous ID: ${previousSuggestedId}`);
+
+             if (previousSuggestedId && currentSuggestedQuestions.hasOwnProperty(previousSuggestedId)) {
+                  // Restore suggested questions from the previous step's state
+                  console.log(`Restoring suggested Qs from ${previousSuggestedId}`);
+                  let restoredHTML = currentSuggestedQuestions[previousSuggestedId];
+                  // FIX: Rewrite onclick to use the *current* page context
+                  const currentContextPageId = targetElementId.replace('-suggested', ''); // e.g., 'guess-result-1'
+                  console.log(`Rewriting onclick handlers in restored HTML for context: ${currentContextPageId}`);
+                  // Make the regex non-greedy and handle potential spaces
+                  restoredHTML = restoredHTML.replace(/handleQuestionClick\(this,\s*'([^']+)'\)/g, `handleQuestionClick(this, '${currentContextPageId}')`);
+                  suggestedArea.innerHTML = restoredHTML;
+              } else if (targetElementId === 'game-start-suggested') {
+                   // Reset to initial questions for game-start
+                   console.log(`Setting initial suggested Qs for game-start`);
+                   suggestedArea.innerHTML = `
+                       <button class="question-tag" data-question="這個詞是否表示一個具體的物品？" data-answer="否" data-next-question="這個詞是否需要團隊合作？" onclick="handleQuestionClick(this, 'game-start')">這個詞是否表示一個具體的物品？</button>
+                       <button class="question-tag" data-question="這個詞是否與改變或進步有關？" data-answer="是" data-next-question="這個詞是否代表一種過程？" onclick="handleQuestionClick(this, 'game-start')">這個詞是否與改變或進步有關？</button>`;
+               } else {
+                   // Clear if no previous state known (e.g., for guess-result-2 initially)
+                   console.log(`Clearing suggested Qs for ${targetElementId}`);
+                   suggestedArea.innerHTML = '';
+              }
+             // Update state for current area AFTER setting its content
+             updateCurrentSuggested(targetElementId);
+         }
+
+
+        // --- Populate Content Functions ---
+
+        function populateQnA(targetElementId, filterByPageId) {
+            const qnaArea = document.getElementById(targetElementId);
+            if (qnaArea) {
+                qnaArea.innerHTML = ''; // Clear previous content
+                let logsToDisplay;
+                if (filterByPageId) {
+                     // Show only questions asked *on* the specified page
+                     console.log(`Populating QnA for ${targetElementId}, filtered by page ${filterByPageId}`);
+                     logsToDisplay = answeredQuestionsLog.filter(log => log.page === filterByPageId);
+                } else {
+                     // Show all logs if filterByPageId is null/undefined
+                     console.log(`Populating QnA for ${targetElementId} with all history`);
+                     logsToDisplay = answeredQuestionsLog;
+                 }
+
+                 // Display from oldest to newest for history consistency
+                 logsToDisplay.forEach(log => {
+                     displaySingleQnA(log.question, log.answer, targetElementId);
+                });
+            } else {
+                 console.warn(`QnA population target not found: ${targetElementId}`);
+             }
+        }
+
+        function getWordleGridHTML(word, target = targetWord) {
+             word = word.toUpperCase();
+             target = target.toUpperCase();
+             let html = '<div class="wordle-grid">';
+
+             // --- Hardcoded Demo Overrides ---
+             if (word === "TECHNOLOGY") {
+                 // User spec: (T)ECH(N)(O)L(O)GY - T, N, O, O yellow, rest gray
+                 html += '<div class="letter-tile wrong-position">T</div>'; // Yellow
+                 html += '<div class="letter-tile incorrect">E</div>';    // Gray
+                 html += '<div class="letter-tile incorrect">C</div>';    // Gray
+                 html += '<div class="letter-tile incorrect">H</div>';    // Gray
+                 html += '<div class="letter-tile wrong-position">N</div>'; // Yellow
+                 html += '<div class="letter-tile wrong-position">O</div>'; // Yellow
+                 html += '<div class="letter-tile incorrect">L</div>';    // Gray
+                 html += '<div class="letter-tile wrong-position">O</div>'; // Yellow
+                 html += '<div class="letter-tile incorrect">G</div>';    // Gray
+                 html += '<div class="letter-tile incorrect">Y</div>';    // Gray
+                 html += '</div>';
+                 console.log(`Using hardcoded Wordle for TECHNOLOGY`);
+                 return html;
+             }
+             if (word === "INVENTION") {
+                 // User spec: (I)(N)VEN(T)(I)(O)(N) green, IN(V)E(N)TION yellow, rest gray
+                 html += '<div class="letter-tile correct">I</div>';         // Green
+                 html += '<div class="letter-tile correct">N</div>';         // Green
+                 html += '<div class="letter-tile wrong-position">V</div>'; // Yellow
+                 html += '<div class="letter-tile incorrect">E</div>';     // Gray
+                 html += '<div class="letter-tile wrong-position">N</div>'; // Yellow (Second N)
+                 html += '<div class="letter-tile correct">T</div>';         // Green
+                 html += '<div class="letter-tile correct">I</div>';         // Green
+                 html += '<div class="letter-tile correct">O</div>';         // Green
+                 html += '<div class="letter-tile correct">N</div>';         // Green
+                 // Pad to target length (INNOVATION has 10 letters)
+                 // html += `<div class="letter-tile incorrect" style="opacity: 0.5;">?</div>`; // INVENTION is shorter
+                 html += '</div>';
+                 console.log(`Using hardcoded Wordle for INVENTION`);
+                 return html;
+             }
+             // --- End Hardcoded Overrides ---
+
+             // --- Standard Logic (for INNOVATION or others) ---
+             console.log(`Using standard Wordle logic for ${word}`);
+             const targetLetters = target.split('');
+             const guessLetters = word.split('');
+             const targetLength = targetLetters.length;
+             const guessLength = guessLetters.length;
+
+             // Use a copy of target letter counts for checking yellows
+             const targetLetterCounts = {};
+             targetLetters.forEach(l => targetLetterCounts[l] = (targetLetterCounts[l] || 0) + 1);
+
+             const resultStates = Array(guessLength).fill('incorrect'); // Default state
+
+             // First pass: Check for Greens (correct letter and position)
+             for (let i = 0; i < guessLength; i++) {
+                 if (i < targetLength && guessLetters[i] === targetLetters[i] && targetLetterCounts[guessLetters[i]] > 0) {
+                     resultStates[i] = 'correct';
+                     targetLetterCounts[guessLetters[i]]--; // Decrement count for this correct letter
+                 }
+             }
+
+             // Second pass: Check for Yellows (correct letter, wrong position)
+             for (let i = 0; i < guessLength; i++) {
+                 // Only check if it's not already Green
+                 if (resultStates[i] !== 'correct') {
+                     // Check if the letter exists in the target AND hasn't been fully accounted for by Greens/Yellows
+                     if (targetLetters.includes(guessLetters[i]) && targetLetterCounts[guessLetters[i]] > 0) {
+                         resultStates[i] = 'wrong-position';
+                         targetLetterCounts[guessLetters[i]]--; // Decrement count for this yellow letter
+                     }
+                 }
+             }
+
+             // Generate HTML tiles
+             for (let i = 0; i < guessLength; i++) {
+                  html += `<div class="letter-tile ${resultStates[i]}">${guessLetters[i]}</div>`;
+             }
+
+             // Add placeholder tiles if guess is shorter than target
+             if (guessLength < targetLength) {
+                 for (let i = 0; i < targetLength - guessLength; i++) {
+                     html += `<div class="letter-tile incorrect" style="opacity: 0.5;">?</div>`;
+                 }
+             }
+
+             html += '</div>';
+             return html;
+         }
+
+         // --- Collapsible Logic ---
+         function setupCollapsibles(parentElement = document) {
+             console.log("Setting up collapsibles within:", parentElement);
+             parentElement.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+                 // Check if listener already exists (simple check)
+                 if (!trigger.hasAttribute('data-listener-set')) {
+                     trigger.addEventListener('click', handleCollapseToggle);
+                     trigger.setAttribute('data-listener-set', 'true');
+                     console.log("Added listener to:", trigger);
+                 }
+             });
+         }
+
+         function handleCollapseToggle(event) {
+             const trigger = event.currentTarget;
+             const content = trigger.nextElementSibling; // Assumes content div is immediately after trigger
+             console.log("Toggle clicked:", trigger, "Content:", content);
+             if (content && content.classList.contains('collapsible-content')) {
+                 const isOpen = trigger.classList.toggle('open');
+                 content.classList.toggle('show', isOpen); // Use boolean to set 'show'
+                 console.log("Toggled content visibility to:", isOpen);
+             } else {
+                 console.warn("Collapsible content not found immediately after trigger:", trigger);
+             }
+         }
+         // --- End Collapsible Logic ---
+
+
+         function getSemanticFeedback(guessWord) {
+            if (guessWord === "TECHNOLOGY") return "類似（與目標詞義相關）";
+            if (guessWord === "INVENTION") return "類似（接近目標詞義）"; // Changed per demo_flow
+            if (guessWord === "INNOVATION") return "完全正確！";
+            return "未知反饋";
+        }
+
+        function getRelevantQnAHTML(guessNumber) {
+             let html = ''; // Start empty, only add if there are logs
+             let relevantLogs = [];
+             // Get the page where questions *leading to* this guess were asked
+             const questionPageId = demoGuesses[guessNumber]?.qPage;
+             console.log(`Getting QnA for guess ${guessNumber}, questions asked on page: ${questionPageId}`);
+
+             if(questionPageId){
+                relevantLogs = answeredQuestionsLog.filter(log => log.page === questionPageId);
+             }
+
+              if (relevantLogs.length > 0) {
+                   console.log(`Found ${relevantLogs.length} relevant QnA logs for guess ${guessNumber}`);
+                   // Build the Q&A list HTML
+                   let qnaListHtml = '';
+                   relevantLogs.forEach(log => { // Show oldest first in history display
+                       qnaListHtml += `
+                           <div class="question-answer">
+                               <p class="question-text">問: ${log.question}</p>
+                               <p class="answer-text">答: ${log.answer}</p>
+                           </div>`;
+                   });
+
+                   // Wrap in collapsible structure
+                   html = `
+                    <div class="previous-guess-qna-history">
+                         <div class="collapsible-trigger">
+                             <span>相關提問紀錄 (${relevantLogs.length})</span>
+                             <span class="arrow">▶</span>
+                         </div>
+                         <div class="collapsible-content">
+                             ${qnaListHtml}
+                         </div>
+                    </div>`;
+
+              } else {
+                 console.log(`No relevant QnA logs found for guess ${guessNumber}`);
+              }
+             return html; // Return collapsible Q&A section or empty string
+        }
+
+
+         function populatePreviousGuess(guessNumber, targetElementId) {
+             const targetElement = document.getElementById(targetElementId);
+             const guessData = demoGuesses[guessNumber];
+             if (targetElement && guessData) {
+                 console.log(`Populating previous guess ${guessNumber} in ${targetElementId}`);
+                 // Structure with collapsible sections
+                 targetElement.innerHTML = `
+                    <div class="previous-guess-details">
+                         <div class="collapsible-trigger">
+                             <span>第 ${guessNumber === 1 ? '一' : '二'} 次猜測: ${guessData.word}</span>
+                              <span class="arrow">▶</span>
+                         </div>
+                         <div class="collapsible-content">
+                             ${getWordleGridHTML(guessData.word)}
+                             <div class="semantic-feedback">
+                                 <p>語義反饋: ${getSemanticFeedback(guessData.word)}</p>
+                             </div>
+                         </div>
+                     </div>
+                    ${getRelevantQnAHTML(guessNumber)} <!-- Add Collapsible Q&A history -->
+                 `;
+                  // IMPORTANT: Setup listeners for the newly added collapsible triggers
+                 setupCollapsibles(targetElement);
+             } else {
+                 console.warn(`Target element or guess data not found for populating guess ${guessNumber} in ${targetElementId}`);
+             }
+         }
+
+        function populateSuccessPageHistory() {
+             // No need to populate guess 3 here as it's displayed separately above.
+             // Populate history for guess 2
+             populatePreviousGuess(2, 'final-guess-2');
+             // Populate history for guess 1
+             populatePreviousGuess(1, 'final-guess-1');
+             // Note: setupCollapsibles will be called by showPage('success')
+        }
+
+
+        // --- Guess Submission (Demo Logic) ---
+        function submitGuess(guessNumber) {
+            const inputId = `guess-input-${guessNumber}`;
+            const inputElement = document.getElementById(inputId);
+             // For demo, use hardcoded guess word regardless of input
+             const guessData = demoGuesses[guessNumber];
+
+             if (!guessData) {
+                 console.error(`Demo guess data not found for guess number ${guessNumber}`);
+                 return;
+             }
+
+             // Set input value for realism (optional)
+             // if (inputElement) inputElement.value = guessData.word;
+
+             // Determine the next page ID based on the guess number
+             let nextPageId = '';
+             if (guessNumber === 1) nextPageId = 'guess-result-1';
+             else if (guessNumber === 2) nextPageId = 'guess-result-2';
+             else if (guessNumber === 3) nextPageId = 'success'; // Go directly to success page
+
+             if (nextPageId) {
+                  // Update the state of suggested questions based on the page we are *leaving*
+                  let leavingPageId = (guessNumber === 1) ? 'game-start' : `guess-result-${guessNumber - 1}`;
+                  updateCurrentSuggested(`${leavingPageId}-suggested`); // Capture state before leaving
+
+                  showPage(nextPageId);
+             }
+          }
+
+          // --- Chart Generation ---
+          function generateCharts() {
+            generateDonutChart();
+            generateScoreLevelBlock();
+            generateLineChart();
+          }
+
+          function generateDonutChart() {
+            const chartContainer = document.getElementById('vocab-mastery-chart');
+            if (!chartContainer) return;
+
+            const playedWords = PLAYED_WORDS_COUNT;
+            const totalWords = TOTAL_TOEIC_WORDS;
+            const percentage = totalWords > 0 ? (playedWords / totalWords) * 100 : 0;
+
+            const radius = 42; // Adjusted radius
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (percentage / 100) * circumference;
+
+            // Clear previous segments if any
+            const existingSegments = chartContainer.querySelectorAll('.donut-segment');
+            existingSegments.forEach(seg => seg.remove());
+
+            // Add the progress segment
+            const segment = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            segment.setAttribute('class', 'donut-segment');
+            segment.setAttribute('cx', '50');
+            segment.setAttribute('cy', '50');
+            segment.setAttribute('r', radius);
+            segment.setAttribute('fill', 'transparent');
+            segment.setAttribute('stroke', 'var(--primary-color)'); // Use correct color
+            segment.setAttribute('stroke-width', '10');
+            segment.setAttribute('stroke-dasharray', `${circumference} ${circumference}`);
+            segment.setAttribute('stroke-dashoffset', offset);
+            segment.setAttribute('transform', 'rotate(-90 50 50)'); // Start from top
+            chartContainer.appendChild(segment);
+
+            // Update text
+            const textLabel = chartContainer.querySelector('.donut-label');
+            const subLabel = chartContainer.querySelector('.donut-sublabel');
+            if(textLabel) textLabel.textContent = `${percentage.toFixed(1)}%`;
+            if(subLabel) subLabel.textContent = `已練習 (${playedWords}/${totalWords})`;
+          }
+
+           function generateScoreLevelBlock() {
+               const scoreBlock = document.getElementById('score-level');
+               if (!scoreBlock) return;
+
+               const playedWords = PLAYED_WORDS_COUNT;
+               let scoreEstimate = 400; // Base score
+               let description = "基礎詞彙量";
+
+               // Very rough simulation of score based on word count
+               if (playedWords > 1000) { scoreEstimate = 850; description = "接近高階水平"; }
+               else if (playedWords > 500) { scoreEstimate = 750; description = "中高階水平"; }
+               else if (playedWords > 200) { scoreEstimate = 650; description = "中階水平"; }
+               else if (playedWords > 50) { scoreEstimate = 500; description = "基礎進階水平"; }
+
+               scoreBlock.innerHTML = `
+                   <div class="score">TOEIC 約 ${scoreEstimate} 分</div>
+                   <div class="description">基於您已練習的 ${playedWords} 個詞彙量 (${description})</div>
+               `;
+           }
+
+
+          function generateLineChart() {
+            const chartContainer = document.getElementById('vocab-growth-chart');
+            if (!chartContainer) return;
+
+            // Simulated data (weeks, cumulative words)
+            const data = [
+                { week: 1, words: 15 }, { week: 4, words: 50 },
+                { week: 8, words: 110 }, { week: 12, words: 180 },
+                { week: 16, words: PLAYED_WORDS_COUNT } // Use current count for last point
+            ];
+
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+            const svgWidth = 300;
+            const svgHeight = 150;
+            const chartWidth = svgWidth - padding.left - padding.right;
+            const chartHeight = svgHeight - padding.top - padding.bottom;
+
+            const maxWords = Math.max(...data.map(d => d.words), 0) * 1.1; // Add 10% buffer
+            const maxWeek = Math.max(...data.map(d => d.week), 1);
+
+            // Scaling functions (simple linear scale)
+            const scaleX = (week) => padding.left + (week / maxWeek) * chartWidth;
+            const scaleY = (words) => svgHeight - padding.bottom - (words / maxWords) * chartHeight;
+
+            // Clear previous chart elements
+            chartContainer.innerHTML = '';
+
+            // --- Create Grid --- (Optional but helpful)
+            const gridGroup = document.createElementNS(svgNS, 'g');
+            // Horizontal grid lines (e.g., at 0, max/2, max)
+            [0, Math.round(maxWords / 2), Math.round(maxWords)].forEach(val => {
+                 if (val <= maxWords && val >= 0) { // Avoid drawing line above max
+                     const y = scaleY(val);
+                     const line = document.createElementNS(svgNS, 'line');
+                     line.setAttribute('x1', padding.left);
+                     line.setAttribute('y1', y);
+                     line.setAttribute('x2', svgWidth - padding.right);
+                     line.setAttribute('y2', y);
+                     line.setAttribute('stroke', 'var(--border-color)');
+                     line.setAttribute('stroke-dasharray', '2,2');
+                     line.setAttribute('stroke-width', '0.5');
+                     gridGroup.appendChild(line);
+                     // Add Y-axis label for grid line
+                      const text = document.createElementNS(svgNS, 'text');
+                      text.setAttribute('x', padding.left - 8);
+                      text.setAttribute('y', y);
+                      text.setAttribute('text-anchor', 'end');
+                      text.setAttribute('dominant-baseline', 'middle');
+                      text.setAttribute('class', 'axis-label');
+                      text.textContent = Math.round(val);
+                      gridGroup.appendChild(text);
+                 }
+             });
+             chartContainer.appendChild(gridGroup);
+
+            // --- Create Polyline for the line chart ---
+            const points = data.map(d => `${scaleX(d.week)},${scaleY(d.words)}`).join(' ');
+            const polyline = document.createElementNS(svgNS, 'polyline');
+            polyline.setAttribute('points', points);
+            polyline.setAttribute('fill', 'none');
+            polyline.setAttribute('stroke', 'var(--primary-color)');
+            polyline.setAttribute('stroke-width', '2');
+            chartContainer.appendChild(polyline);
+
+            // --- Create Points --- (Optional)
+            const pointsGroup = document.createElementNS(svgNS, 'g');
+            data.forEach(d => {
+                const circle = document.createElementNS(svgNS, 'circle');
+                circle.setAttribute('cx', scaleX(d.week));
+                circle.setAttribute('cy', scaleY(d.words));
+                circle.setAttribute('r', '3');
+                circle.setAttribute('fill', 'var(--primary-color)');
+                circle.setAttribute('stroke', 'var(--card-bg)');
+                circle.setAttribute('stroke-width', '1.5');
+                pointsGroup.appendChild(circle);
+                 // Add X-axis label for data point
+                 const text = document.createElementNS(svgNS, 'text');
+                 text.setAttribute('x', scaleX(d.week));
+                 text.setAttribute('y', svgHeight - padding.bottom + 15);
+                 text.setAttribute('text-anchor', 'middle');
+                 text.setAttribute('class', 'axis-label');
+                 text.textContent = `W${d.week}`;
+                 pointsGroup.appendChild(text);
+            });
+            chartContainer.appendChild(pointsGroup);
+
+          }
+          // --- End Chart Generation ---
+
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('homepage'); // Start on the homepage
+            // Initial collapsibles setup called within showPage when needed
+        });
+
+    </script>
+</body>
+</html> 
